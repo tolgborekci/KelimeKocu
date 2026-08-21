@@ -1,0 +1,51 @@
+name: Kelime Kocu APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'KelimeKocu_Source.zip'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kaynaklari al
+        uses: actions/checkout@v4
+
+      - name: JDK 17 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle 8.7 kur
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Projeyi ac
+        run: |
+          mkdir -p android-project
+          unzip -o KelimeKocu_Source.zip -d android-project
+          echo "Proje dosyalari:"
+          find android-project -maxdepth 3 -type f | sort
+
+      - name: Debug APK derle
+        working-directory: android-project
+        run: gradle --no-daemon assembleDebug
+
+      - name: APK dosyasini kontrol et
+        run: |
+          ls -lh android-project/app/build/outputs/apk/debug/
+          test -f android-project/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: APK'yi indirilebilir artifact olarak yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: KelimeKocu-APK
+          path: android-project/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
